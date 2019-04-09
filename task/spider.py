@@ -2,7 +2,8 @@ import requests
 import json
 import time
 import math
-from model.db_model import Session, Project, Building
+from datetime import datetime
+from model.db_model import Session, Project, Building, Room
 from .celery import app
 
 
@@ -25,6 +26,7 @@ def add_buildings(building_ids: str, block_names: str, project_id: int, session:
             session.add(building)
         else:
             building.building_name = building_name
+            building.update_time = datetime.now()
     session.commit()
 
 
@@ -71,5 +73,28 @@ def get_projects(region: str) -> None:
         page_index += 1
 
 
-def get_rooms(building: str) -> None:
-    pass
+def room_valid(room: dict) -> bool:
+    # fixme: 1193480中存在keys全部为0但是并不是不可用的情况，"YZ01201409110000010100100210009"
+    keys = ['F_ISCONTRACT', 'F_ISLIMIT', 'F_ISONLINESIGN', 'F_ISOTHERRIGHT', 'F_ISOWNERSHIP', 'F_ISUSE']
+    return any(map(lambda k: room[k], keys))
+
+
+def get_rooms(building_id: str) -> None:
+    session = Session()
+    building = session.query(Building).filter(Building.building_id == building_id).one_or_none()
+    if not building:
+        return
+    building_id = building.building_id
+    max_retry = MAX_RETRY
+    res = requests.post(ROOM_QUERY_URL, data=json.dumps({'buildingid': building_id}), headers=headers)
+    rooms = json.loads(res.json()['d'])
+    session = Session()
+    room_set = set()
+    for unit in rooms:
+        for room in filter(room_valid, unit['rooms']):
+            if (room['F_HOUSE_NO'] in room_set):
+                continue
+            r = Room.from_dict(room, building_id)
+            session.add(r)
+            room_set.add(room['F_HOUSE_NO'])
+        session.commit()

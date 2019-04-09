@@ -1,6 +1,6 @@
 import click
 from model.db_model import Region
-from .spider import get_projects
+from .spider import get_projects, get_rooms
 
 
 @click.group(chain=True)
@@ -18,6 +18,13 @@ def sync_project(region):
         return
     get_projects(region)
     click.echo(f'sync {Region.region_map.get(region)}({region}) successful!')
+
+
+@cli.command()
+@click.argument('building_id', nargs=1)
+def sync_rooms(building_id):
+    get_rooms(building_id)
+    click.echo(f'sync {building_id} successful!')
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
+import json
 from datetime import datetime
-from sqlalchemy import create_engine, ForeignKey, Column, Integer, String, DateTime, Boolean, Text, Float, Enum
+from sqlalchemy import create_engine, ForeignKey, Column, Integer, String, DateTime, Boolean, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import enum
@@ -9,12 +10,6 @@ from config import DB_URL
 engine = create_engine(DB_URL, echo=False)
 Session = sessionmaker(bind=engine)
 Base = declarative_base()
-
-
-class RoomStatus(enum.Enum):
-    selling = 1  # 在售
-    sold = 2  # 已售
-    unavailable = 3  # 不可售
 
 
 class Region(Base):
@@ -84,15 +79,33 @@ class Room(Base):
     __tablename__ = 'room'
 
     id = Column(Integer, primary_key=True)
-    room_id = Column(String(10), nullable=False, unique=True)
     building_id = Column(Integer, ForeignKey('building.id'))
-    room_number = Column(String(35), nullable=False)  # 房籍号
+    room_number = Column(String(35), nullable=False, unique=True)  # 房籍号
     room_type = Column(String(20), nullable=True)  # 户型
     use_type = Column(String(50))  # 用途
     building_area = Column(Float)  # 建筑面积
     inner_area = Column(Float)  # 套内面积
-    room_status = Column(Enum(RoomStatus))  # 房屋状态，是否已售或不可售
+    room_status = Column(Boolean)  # 房屋状态，是否已售
     room_doorplate = Column(String(20))  # 门牌编号，1-1-1，代表1单元1层第1户
+    floor_height = Column(Integer, default=1)  # 楼层高度，默认是1，跃层才会大于1
+    location = Column(String(100))  # 房屋位置
     create_time = Column(DateTime, default=datetime.now)
     update_time = Column(DateTime, default=datetime.now)
     extra = Column(Text)  # 原始json信息
+
+    @classmethod
+    def from_dict(cls, d, building_id):
+        params = {
+            'building_id': building_id,
+            'room_number': d['F_HOUSE_NO'],
+            'room_type': d['rType'],
+            'use_type': d['use'],
+            'building_area': d['bArea'],
+            'inner_area': d['iArea'],
+            'room_status': bool(d['F_ISCONTRACT']),
+            'room_doorplate': f"{d['unitnumber']}-{d['flr']}-{d['x']}",
+            'floor_height': int(d['u']) + 1,
+            'location': d['location'],
+            'extra': json.dumps(d)
+        }
+        return cls(**params)
