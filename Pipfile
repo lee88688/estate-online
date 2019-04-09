@@ -1,0 +1,18 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pylint = "*"
+ipython = "*"
+autopep8 = "*"
+
+[packages]
+sqlalchemy = "*"
+requests = "*"
+click = "*"
+celery = {extras = ["redis"],version = "*"}
+
+[requires]
+python_version = "3.6"

@@ -1,0 +1,9 @@
+{
+    "db": {
+        "url": "sqlite:///{root}/db.sqlite3"
+    },
+    "redis": {
+        "host": "localhost",
+        "port": 6379
+    }
+}
