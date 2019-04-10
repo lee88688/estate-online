@@ -1,7 +1,7 @@
 import requests
 import json
 import time
-import math
+import enum
 from datetime import datetime
 from model.db_model import Session, Project, Building, Room
 from .celery import app
@@ -10,6 +10,7 @@ from .celery import app
 MAX_RETRY = 5
 PROJECT_QUERY_URL = 'http://www.cq315house.com/WebService/Service.asmx/getParamDatas'
 ROOM_QUERY_URL = 'http://www.cq315house.com/WebService/Service.asmx/GetRoomJson'
+ROOM_STATUS_QUERY_URL = 'http://www.cq315house.com/WebService/Service.asmx/GetJsonStatus'
 headers = {'Content-type': 'application/json',
            'Accept': 'application/json, text/javascript'}
 
@@ -73,10 +74,49 @@ def get_projects(region: str) -> None:
         page_index += 1
 
 
+class RoomStatus(enum.Enum):
+    selling = 1
+    sold = 2
+    invalid = 3
+
+    @classmethod
+    def get_status(cls):
+        if hasattr(cls, 'status'):
+            return
+        res = requests.post(ROOM_STATUS_QUERY_URL, data=json.dumps({'para': ''}), headers=headers)
+        status_arr = json.loads(res.json()['d'])
+        cls.status = [(s['val'], s['name']) for s in status_arr if s['showType'] == 0]
+        cls.status.reverse()
+
+    @classmethod
+    def room_status(cls, v: int):
+        cls.get_status()
+        for sv, name in cls.status:
+            if (v & sv) == sv:
+                if name == '未售':
+                    return cls.selling
+                elif name == '已售':
+                    return cls.sold
+                else:
+                    return cls.invalid
+        return cls.invalid
+
+
+    def __repr__(self):
+        if self == self.selling:
+            return '未售'
+        elif self == self.sold:
+            return '已售'
+        else:
+            return '不可售'
+
+
 def room_valid(room: dict) -> bool:
-    # fixme: 1193480中存在keys全部为0但是并不是不可用的情况，"YZ01201409110000010100100210009"
-    keys = ['F_ISCONTRACT', 'F_ISLIMIT', 'F_ISONLINESIGN', 'F_ISOTHERRIGHT', 'F_ISOWNERSHIP', 'F_ISUSE']
-    return any(map(lambda k: room[k], keys))
+    """
+    from buildingTable __getStatus function
+    """
+    # sync-project 44，1193480中存在keys全部为0但是并不是不可用的情况，"YZ01201409110000010100100210009"
+    return RoomStatus.room_status(room['status']) != RoomStatus.invalid
 
 
 def get_rooms(building_id: str) -> None:
@@ -85,7 +125,6 @@ def get_rooms(building_id: str) -> None:
     if not building:
         return
     building_id = building.building_id
-    max_retry = MAX_RETRY
     res = requests.post(ROOM_QUERY_URL, data=json.dumps({'buildingid': building_id}), headers=headers)
     rooms = json.loads(res.json()['d'])
     session = Session()
@@ -95,6 +134,7 @@ def get_rooms(building_id: str) -> None:
             if (room['F_HOUSE_NO'] in room_set):
                 continue
             r = Room.from_dict(room, building_id)
+            r.room_status = RoomStatus.room_status(room['status']) == RoomStatus.sold
             session.add(r)
             room_set.add(room['F_HOUSE_NO'])
         session.commit()
