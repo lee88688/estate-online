@@ -20,6 +20,7 @@
         <el-button type="primary">查询</el-button>
       </el-form-item>
     </el-form>
+    <el-pagination :page-size="10" layout="prev, pager, next, jumper" class="pagination"></el-pagination>
   </el-card>
 </template>
 
@@ -30,5 +31,8 @@ export default {
 </script>
 
 <style scoped>
-
+.pagination {
+  display: flex;
+  justify-content: center;
+}
 </style>
