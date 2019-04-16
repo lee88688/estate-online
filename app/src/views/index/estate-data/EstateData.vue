@@ -7,7 +7,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="面积范围：">
-        <el-input></el-input>
+        <el-input disabled></el-input>
       </el-form-item>
       <el-form-item label="项目名称：">
         <el-input v-model="form.project_name" clearable></el-input>
@@ -23,6 +23,15 @@
       </el-form-item>
     </el-form>
     <el-table :data="tableData" border stripe>
+      <el-table-column type="expand">
+        <template v-slot="{ row }">
+          <template v-for="building in row.building">
+            <a target="_blank" :key="building[0]"
+               :href="`http://www.cq315house.com/HtmlPage/ShowRooms.html?buildingid=${building[0]}`">{{ building[1] }}</a>
+            <br :key="building[0]">
+          </template>
+        </template>
+      </el-table-column>
       <el-table-column label="楼盘名称" prop="project_name"></el-table-column>
       <el-table-column label="开发商" prop="enterprise_name"></el-table-column>
       <el-table-column label="楼盘地址" prop="location"></el-table-column>

@@ -133,6 +133,9 @@ def get_rooms(building_id: str) -> None:
         for room in filter(room_valid, unit['rooms']):
             if (room['F_HOUSE_NO'] in room_set):
                 continue
+            if session.query(Room).filter(Room.room_number == room['F_HOUSE_NO']).update(Room.from_dict2update(room)):
+                session.commit()
+                continue
             r = Room.from_dict(room, building_id)
             r.room_status = RoomStatus.room_status(room['status']) == RoomStatus.sold
             session.add(r)

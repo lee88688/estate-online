@@ -27,13 +27,14 @@ def query():
     project_name_clause = Project.project_name.like(f'%{request.json["project_name"]}%') if request.json.get('project_name') else True
     enterprise_name_clause = Project.enterprise_name.like(f'%{request.json["enterprise_name"]}%') if request.json.get('enterprise_name') else True
     location_clause = Project.location.like(f'%{request.json["location"]}%') if request.json.get('location') else True
-    q = session.query(Project).join(Region).\
+    q = session.query(Project, Region).join(Region).\
         filter(region_clause, project_name_clause, enterprise_name_clause, location_clause).\
         limit(page_size).offset((page_index - 1) * page_size).from_self().join(Building).\
         with_entities(
             Project.project_id, Project.project_name, Region.name, Project.location,
             Project.enterprise_name, Building.building_id, Building.building_name
         )
+    
     data = []
     d = {}
     for row in q:

@@ -109,3 +109,18 @@ class Room(Base):
             'extra': json.dumps(d)
         }
         return cls(**params)
+
+    @classmethod
+    def from_dict2update(cls, d):
+        params = {
+            'room_type': d['rType'],
+            'use_type': d['use'],
+            'building_area': d['bArea'],
+            'inner_area': d['iArea'],
+            'room_status': bool(d['F_ISCONTRACT']),
+            'room_doorplate': f"{d['unitnumber']}-{d['flr']}-{d['x']}",
+            'floor_height': int(d['u']) + 1,
+            'location': d['location'],
+            'extra': json.dumps(d)
+        }
+        return params
