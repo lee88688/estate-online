@@ -25,16 +25,16 @@ def query():
 
     region_clause = Project.region == request.json['region'] if request.json.get('region') else True
     project_name_clause = Project.project_name.like(f'%{request.json["project_name"]}%') if request.json.get('project_name') else True
-    enterprise_name_clause = Project.enterprise_name.like(f'{request.json["enterprise_name"]}') if request.json.get('enterprise_name') else True
+    enterprise_name_clause = Project.enterprise_name.like(f'%{request.json["enterprise_name"]}%') if request.json.get('enterprise_name') else True
     location_clause = Project.location.like(f'%{request.json["location"]}%') if request.json.get('location') else True
-    q = session.query(Project).limit(page_size).offset((page_index - 1) * page_size).from_self().\
-        join(Building).join(Region).\
+    q = session.query(Project).join(Region).\
         filter(region_clause, project_name_clause, enterprise_name_clause, location_clause).\
+        limit(page_size).offset((page_index - 1) * page_size).from_self().join(Building).\
         with_entities(
             Project.project_id, Project.project_name, Region.name, Project.location,
             Project.enterprise_name, Building.building_id, Building.building_name
         )
-    result = []
+    data = []
     d = {}
     for row in q:
         project_id = row[0]
@@ -49,6 +49,33 @@ def query():
                 'enterprise_name': row[4],
                 'building': [(row[5], row[6])]
             }
-            result.append(item)
+            data.append(item)
             d[project_id] = item
+
+    total_size = session.query(Project).join(Region).\
+        filter(region_clause, project_name_clause, enterprise_name_clause, location_clause).\
+        count()
+    result = {
+        'data': data,
+        'total_size': total_size
+    }
+    session.close()
+
+    return ApiResult(result=result).make_response()
+
+
+@bp.route('/region', methods=['GET'])
+def region():
+    """
+    get region name and code
+    """
+    session = Session()
+    q = session.query(Region)
+    result = []
+    for row in q:
+        result.append({
+            'code': row.id,
+            'name': row.name
+        })
+    session.close()
     return ApiResult(result=result).make_response()

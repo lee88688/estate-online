@@ -9,12 +9,24 @@ class TestWebApi(unittest.TestCase):
         self.client = get_client()
 
     def test_query(self):
+        # payload = {
+        #     'region': '44'
+        # }
+        # res = self.client.post('/api/query', data=json.dumps(payload), content_type='application/json')
+        # data = json.loads(res.data)
+        # self.assertNotEqual(len(data['result']), 0)
         payload = {
-            'region': '44'
+            'region': '4',
+            'page_index': 1,
+            'page_size': 10
         }
-        res = self.client.post('/api/query', data=json.dumps(payload), content_type='application/json')
+        self.client.post('/api/query', data=json.dumps(payload), content_type='application/json')
+
+    def test_region(self):
+        res = self.client.get('/api/region')
         data = json.loads(res.data)
-        self.assertEqual(len(data['result']), 10)
+        self.assertEqual(type(data['result']), list)
+        self.assertNotEqual(len(data['result']), 0)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import json
-from datetime import datetime
-from sqlalchemy import create_engine, ForeignKey, Column, Integer, String, DateTime, Boolean, Text, Float
+from datetime import date
+from sqlalchemy import create_engine, ForeignKey, Column, Integer, String, DateTime, Boolean, Text, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import enum
@@ -54,8 +54,8 @@ class Project(Base):
     location = Column(String(100))
     region = Column(String(10), ForeignKey('region.id'))
     extra = Column(Text)  # 原始数据
-    create_time = Column(DateTime, default=datetime.now)
-    update_time = Column(DateTime, default=datetime.now)
+    create_time = Column(Date, default=date.today)
+    update_time = Column(Date, default=date.today)
 
     def __repr__(self):
         return f'<({self.project_id}) {self.project_name})>'
@@ -68,8 +68,8 @@ class Building(Base):
     building_id = Column(String(10), unique=True)
     building_name = Column(String(100))
     project_id = Column(Integer, ForeignKey('project.id'))
-    create_time = Column(DateTime, default=datetime.now)
-    update_time = Column(DateTime, default=datetime.now)
+    create_time = Column(Date, default=date.today)
+    update_time = Column(Date, default=date.today)
 
     def __repr__(self):
         return f'<({self.building_id} {self.building_name})>'
@@ -89,8 +89,8 @@ class Room(Base):
     room_doorplate = Column(String(20))  # 门牌编号，1-1-1，代表1单元1层第1户
     floor_height = Column(Integer, default=1)  # 楼层高度，默认是1，跃层才会大于1
     location = Column(String(100))  # 房屋位置
-    create_time = Column(DateTime, default=datetime.now)
-    update_time = Column(DateTime, default=datetime.now)
+    create_time = Column(Date, default=date.today)
+    update_time = Column(Date, default=date.today)
     extra = Column(Text)  # 原始json信息
 
     @classmethod

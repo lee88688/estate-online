@@ -2,7 +2,7 @@ import requests
 import json
 import time
 import enum
-from datetime import datetime
+from datetime import date
 from model.db_model import Session, Project, Building, Room
 from .celery import app
 
@@ -27,7 +27,7 @@ def add_buildings(building_ids: str, block_names: str, project_id: int, session:
             session.add(building)
         else:
             building.building_name = building_name
-            building.update_time = datetime.now()
+            building.update_time = date.today()
     session.commit()
 
 

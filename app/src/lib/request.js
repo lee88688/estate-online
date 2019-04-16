@@ -11,3 +11,10 @@ export async function requestPost(url, data) {
   let res = await axios.post(url, data)
   return res.data
 }
+
+export function isSuccess (res) {
+  if (!res.success) {
+    return false
+  }
+  return true
+}

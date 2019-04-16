@@ -6,8 +6,6 @@
     <el-container>
       <el-header height="50px" style="padding: 0;">
         <navbar :is-collapse.sync="isCollapse"></navbar>
-        <div class="content-wrap">
-        </div>
       </el-header>
       <el-main>
         <router-view></router-view>
@@ -32,9 +30,5 @@ export default {
 </script>
 
 <style scoped>
-.content-wrap {
-  height: 100%;
-  width: 100%;
-  padding: 20px;
-}
+
 </style>
