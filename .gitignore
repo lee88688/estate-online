@@ -117,5 +117,6 @@ dmypy.json
 
 # test files
 db.sqlite3
+db.sqlite3-journal
 
 /.vscode

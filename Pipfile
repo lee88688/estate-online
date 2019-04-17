@@ -15,6 +15,7 @@ requests = "*"
 click = "*"
 celery = {extras = ["redis"],version = "*"}
 flask = "*"
+eventlet = "*"
 
 [requires]
 python_version = "3.6"

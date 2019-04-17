@@ -12,6 +12,8 @@ if __name__ == '__main__':
 
 # start worker
 # celery -A task worker --loglevel=info
+# for windows: celery -A task worker --loglevel=info -P eventlet --concurrency=50
+# windows do not support multiprocess task on celery 4.0 above. or use `$env:FORKED_BY_MULTIPROCESSING = 1`
 
 # start beat
 # celery -A task beat --loglevel=info

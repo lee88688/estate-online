@@ -2,9 +2,11 @@ import requests
 import json
 import time
 import enum
+from celery import group
+from celery.utils.log import get_task_logger
 from datetime import date
-from model.db_model import Session, Project, Building, Room
-from .celery import app
+from model.db_model import Session, Project, Building, Room, Region
+from .celery_app import app
 
 
 MAX_RETRY = 5
@@ -13,6 +15,7 @@ ROOM_QUERY_URL = 'http://www.cq315house.com/WebService/Service.asmx/GetRoomJson'
 ROOM_STATUS_QUERY_URL = 'http://www.cq315house.com/WebService/Service.asmx/GetJsonStatus'
 headers = {'Content-type': 'application/json',
            'Accept': 'application/json, text/javascript'}
+logger = get_task_logger(__name__)
 
 
 def add_buildings(building_ids: str, block_names: str, project_id: int, session: Session) -> None:
@@ -31,6 +34,7 @@ def add_buildings(building_ids: str, block_names: str, project_id: int, session:
     session.commit()
 
 
+@app.task
 def get_projects(region: str) -> None:
     max_retry = MAX_RETRY
     payload = {"siteid": region, "useType": "", "areaType": "", "projectname": "",
@@ -39,8 +43,8 @@ def get_projects(region: str) -> None:
     page_index = 0
     page_index_max = 0
     while page_index <= page_index_max:
-        payload['minrow'] = str(page_index * 10 + 1)
-        payload['maxrow'] = str((page_index + 1) * 10 + 1)
+        payload['minrow'] = str(page_index * page_size + 1)
+        payload['maxrow'] = str((page_index + 1) * page_size + 1)
         res = requests.post(PROJECT_QUERY_URL,
                             data=json.dumps(payload), headers=headers)
         try:
@@ -119,6 +123,7 @@ def room_valid(room: dict) -> bool:
     return RoomStatus.room_status(room['status']) != RoomStatus.invalid
 
 
+@app.task
 def get_rooms(building_id: str) -> None:
     session = Session()
     building = session.query(Building).filter(Building.building_id == building_id).one_or_none()
@@ -126,7 +131,11 @@ def get_rooms(building_id: str) -> None:
         return
     building_id = building.building_id
     res = requests.post(ROOM_QUERY_URL, data=json.dumps({'buildingid': building_id}), headers=headers)
-    rooms = json.loads(res.json()['d'])
+    try:
+        rooms = json.loads(res.json()['d'])
+    except json.JSONDecodeError:
+        logger.warning(res.text)
+        raise
     session = Session()
     room_set = set()
     for unit in rooms:
@@ -141,3 +150,17 @@ def get_rooms(building_id: str) -> None:
             session.add(r)
             room_set.add(room['F_HOUSE_NO'])
         session.commit()
+
+
+@app.task
+def task_sync_online_data():
+    # job = group(map(lambda r: get_projects.s(str(r)), Region.region_map.keys()))
+    # result = job.apply_async()
+    # result.join()
+    # print('task end')
+
+    session = Session()
+    job = group(map(lambda r: get_rooms.s(r.building_id), session.query(Building)))
+    result = job.apply_async()
+    result.join()
+    logger.info('room sync end!')

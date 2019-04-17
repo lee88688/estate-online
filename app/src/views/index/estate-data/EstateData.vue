@@ -25,11 +25,11 @@
     <el-table :data="tableData" border stripe>
       <el-table-column type="expand">
         <template v-slot="{ row }">
-          <template v-for="building in row.building">
-            <a target="_blank" :key="building[0]"
+          <div class="building-content">
+            <a v-for="building in row.building" target="_blank" :key="building[0]"
                :href="`http://www.cq315house.com/HtmlPage/ShowRooms.html?buildingid=${building[0]}`">{{ building[1] }}</a>
-            <br :key="building[0]">
-          </template>
+            <!--<br :key="building[0]">-->
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="楼盘名称" prop="project_name"></el-table-column>
@@ -88,9 +88,21 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .pagination {
   display: flex;
   justify-content: center;
+}
+
+.building-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  justify-content: flex-start;
+
+  > a {
+    margin-right: 10px;
+  }
 }
 </style>
