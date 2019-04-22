@@ -74,6 +74,8 @@ def get_projects(region: str) -> None:
                 )
                 session.add(project)
                 session.commit()
+            else:
+                project.update_time = date.today()
             add_buildings(p['buildingid'], p['blockname'], project.id, session)
         page_index += 1
 
@@ -153,14 +155,23 @@ def get_rooms(building_id: str) -> None:
 
 
 @app.task
-def task_sync_online_data():
-    # job = group(map(lambda r: get_projects.s(str(r)), Region.region_map.keys()))
-    # result = job.apply_async()
-    # result.join()
-    # print('task end')
-
-    session = Session()
-    job = group(map(lambda r: get_rooms.s(r.building_id), session.query(Building)))
+def task_sync_projects():
+    job = group(map(lambda r: get_projects.s(str(r)), Region.region_map.keys()))
     result = job.apply_async()
     result.join()
-    logger.info('room sync end!')
+
+
+@app.task
+def task_sync_rooms_by_region(region_code):
+    session = Session()
+    if not session.query(Region).filter(Region.id == region_code).one_or_none():
+        return
+    q = session.query(Building).join(Project).join(Region).filter(Region.id == region_code)
+    job = group(map(lambda r: get_rooms.s(r.building_id), q))
+    result = job.apply_async()
+    result.join()
+
+
+@app.task
+def task_sync_online_data():
+    task_sync_projects.delay().get()
